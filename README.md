@@ -1,7 +1,7 @@
 Mail Client/Server
 ------------------
 
-## How to compile and run
+### How to compile and run
 
 ```shell
 mkdir build/
