@@ -10,7 +10,15 @@ users = []
 
 def main():
     # TODO Read users from file
-    users.append({ "name": "david", "password": "lol" })
+    users.append({ "name": "david", "password": "lol",
+                   "emails": {
+                       "sent": [
+                           { "subject": "Novo Contrato" }
+                       ],
+
+                       "received": [ ]
+                   },
+                  })
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind((HOST, PORT))
@@ -26,11 +34,12 @@ def main():
         # 'data' is now a dictionary in a string
         # parse it into client_user
         client_user = literal_eval(data.decode())
+        for user in users:
+            print(user)
+            if user["name"] == client_user["name"] and user["password"] == client_user["password"]:
+                client_user = user
 
-        if client_user not in users:
-            users.append(client_user)
-
-        conn.sendall(data)
+        conn.sendall(str(client_user).encode())
 
     conn.close()
 

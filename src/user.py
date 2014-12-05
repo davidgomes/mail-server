@@ -2,8 +2,8 @@
 
 The user structure is as follows:
 
-  user = { emails: [ sent: [ ... ],
-                     received: [ ... ] ],
+  user = { emails: { sent: [ ... ],
+                     received: [ ... ] },
            name: "Cristiano Ronaldo",
            password: "irina" }
 
