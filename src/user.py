@@ -15,8 +15,10 @@ The user structure is as follows:
 
 """
 
+import utils
 
 def login():
+    utils.clear_screen()
     name = str(input("Name: "))
     password = str(input("Password: "))
 
