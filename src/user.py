@@ -19,8 +19,9 @@ import utils
 
 def login():
     utils.clear_screen()
-    name = str(input("Name: "))
-    password = str(input("Password: "))
+    print("Welcome to mail-server, you are welcome to log in.")
+    name = input("Name: ")
+    password = input("Password: ")
 
     return { "name": name, "password": password }
 

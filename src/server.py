@@ -1,19 +1,35 @@
 import socket
 import user
 from ast import literal_eval
+import os
 
 
 HOST = ''                 # Symbolic name meaning all available interfaces
-PORT = 50007              # Arbitrary non-privileged port
+PORT = 50008              # Arbitrary non-privileged port
 
 users = []
+
+def server_process(data, conn):
+    # 'data' is now a dictionary in a string
+    # parse it into client_user
+
+    client_user = literal_eval(data.decode())
+    for user in users:
+        print(user)
+        if user["name"] == client_user["name"] and user["password"] == client_user["password"]:
+            client_user = user
+
+            conn.sendall(str(client_user).encode())
 
 def main():
     # TODO Read users from file
     users.append({ "name": "david", "password": "lol",
                    "emails": {
                        "sent": [
-                           { "subject": "Novo Contrato" }
+                           {
+                             "subject": "Novo Contrato",
+                             "content": "Quero mais dinheiro.\nAssinado Ronaldo."
+                           }
                        ],
 
                        "received": [ ]
@@ -31,15 +47,10 @@ def main():
         # keep looking
         if not data: continue
 
-        # 'data' is now a dictionary in a string
-        # parse it into client_user
-        client_user = literal_eval(data.decode())
-        for user in users:
-            print(user)
-            if user["name"] == client_user["name"] and user["password"] == client_user["password"]:
-                client_user = user
+        pid = os.fork()
 
-        conn.sendall(str(client_user).encode())
+        if pid == 0:
+            server_process(data, conn)
 
     conn.close()
 
