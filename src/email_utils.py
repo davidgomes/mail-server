@@ -1,16 +1,21 @@
 """
-    A set of functions regarding writing and reading emails and email lists.
+A set of functions regarding writing and reading emails and email lists.
 """
 
 import utils
 
 def list_wait(email_list):
     """
-        Displays a list of emails and allows the user to pick one.
+    Displays a list of emails and allows the user to pick one.
     """
 
     utils.clear_screen()
 
+    if len(email_list) == 0:
+        print("No emails to read. Press Return to go back to the menu.")
+        input()
+        return
+    
     for index, email in enumerate(email_list):
         print("[{0}] {1}".format(index + 1, email["subject"]))
 
@@ -20,7 +25,7 @@ def list_wait(email_list):
 
 def display_email_wait(which_email):
     """
-        Displays a given email and
+    Displays a given email and
     """
     utils.clear_screen()
 

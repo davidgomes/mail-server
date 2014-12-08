@@ -1,0 +1,19 @@
+[
+  {
+    "name": "david",
+    "password": "lol",
+    "emails": {
+      "received": [ ],
+      "sent": [ ]
+    }
+  },
+
+  {
+    "name": "nuno",
+    "password": "nabo",
+    "emails": {
+      "received": [ ],
+      "sent": [ ]
+    }
+  }
+]

@@ -17,8 +17,12 @@ The user structure is as follows:
 
 import utils
 
-def login():
+def login(print_error):
     utils.clear_screen()
+
+    if print_error:
+        print(print_error)
+    
     print("Welcome to mail-server, you are welcome to log in.")
     name = input("Name: ")
     password = input("Password: ")
