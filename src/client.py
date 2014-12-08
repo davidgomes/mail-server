@@ -5,25 +5,21 @@ import email_utils
 from ast import literal_eval
 
 HOST = 'localhost'
-PORT = 50008
+PORT = 50003
 
 def client_send_mail(user):
     return True
-
 
 def client_read_received_mail(user):
     email_utils.list_wait(user["emails"]["received"])
     return True
 
-
 def client_read_sent_mail(user):
     email_utils.list_wait(user["emails"]["sent"])
     return True
 
-
 def client_exit(user):
     return False
-
 
 def client_refresh():
     return True
@@ -39,7 +35,6 @@ def client_menu_wait(user):
     menu_option = int(input("Escolhe: ")) - 1 # options start in 1
     return menu[menu_option][-1](user)
 
-
 def client_menu(menu):
     utils.clear_screen()
 
@@ -47,16 +42,15 @@ def client_menu(menu):
         menu_option = menu[i]
         print("{0}: {1}".format(i + 1, menu_option[0]))
 
-
 def main():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((HOST, PORT))
 
     user_dict = user.login()
-    client_user_str = str(user_dict).encode()
+    client_user_str = str(user_dict)
 
     # Send our login attempt
-    s.sendall(client_user_str)
+    s.sendall("GET {0}".format(client_user_str).encode())
 
     # Receive the full user
     server_response = s.recv(1024).decode()
@@ -69,7 +63,6 @@ def main():
 
     # client_exit leads you where
     s.close()
-
 
 if __name__ == "__main__":
     main()
