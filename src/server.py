@@ -3,8 +3,7 @@ import sys
 import socket
 import json
 from ast import literal_eval
-
-import user
+import socketserver
 
 HOST = ''                 # Symbolic name meaning all available interfaces
 PORT = 50003              # Arbitrary non-privileged port
@@ -35,16 +34,15 @@ def server_get(info, conn):
     # 'data' is a dictionary in a string, containing ["user"] and ["password"]
     # parse it into client_user
 
+    print("Got a GET request.")
+    print(users)
+
     client_user = literal_eval(info)
 
     try:
-        print("Sending back full user.")
-
         full_user = server_find_user(client_user)
         conn.sendall(str(full_user).encode())
     except Exception as error:
-        print("An error occured logging in.")
-
         conn.sendall("ERROR {0}".format(error).encode())
 
 def server_send(info, conn):
@@ -54,8 +52,28 @@ def server_send(info, conn):
     Then proceed to sending the email in ["email"].
     """
 
-    pass
+    print("Got a SEND request.")
 
+    info = literal_eval(info)
+
+    try:
+        full_user = server_find_user(info)
+    except Exception as error:
+        conn.sendall("ERROR {0}".format(error).encode())
+        return
+    
+    # Add the email to each receiver's inbox
+    for receiver in info["email"]["receivers"]:
+        for user in users:
+            if receiver == user["name"]:
+                print("Adding received email to " + user["name"])
+                user["emails"]["received"].append(info["email"])
+
+    # Add the email to the sender's send box
+    full_user["emails"]["sent"].append(info["email"])
+
+    print(users)
+        
 def server_process(data, conn):
     data = data.decode()
     split_data = data.split()
@@ -73,7 +91,7 @@ def main():
     user_file = open("users.txt", "r")
     user_list = json.loads(user_file.read())
     user_file.close()
-
+    
     for user in user_list:
         users.append(user)
 
@@ -88,7 +106,7 @@ def main():
         try:
             conn, addr = s.accept()
             data = conn.recv(1024)
-            
+
             # keep looking
             if not data: continue
 
@@ -107,6 +125,9 @@ def main():
         conn.close()
 
     # TODO Re-write users
+    user_file = open("users.txt", "w")
+    user_file.write(json.dumps(users))
+    user_file.close()
 
 if __name__ == "__main__":
     main()

@@ -1,5 +1,4 @@
 """
-
 The user structure is as follows:
 
   user = { emails: { sent: [ ... ],
@@ -12,7 +11,6 @@ The user structure is as follows:
             sender: user_instance,
             receivers: [ user_instance, ... ],
             content: "Aumentem-me o ordenado." }
-
 """
 
 import utils
@@ -28,7 +26,6 @@ def login(print_error):
     password = input("Password: ")
 
     return { "name": name, "password": password }
-
 
 def add_sent_email(user, email):
     """
