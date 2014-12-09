@@ -17,14 +17,14 @@ def send_server(what):
 
 def client_refresh():
     global client_user
-    
+
     s = send_server("GET {0}".format(client_user))
     server_response = s.recv(1024).decode()
     client_user = literal_eval(server_response)
     s.close()
 
     return True
-    
+
 def client_send_mail():
     client_user["email"] = email_utils.email_send_interface()
     s = send_server("SEND {0}".format(str(client_user)))
@@ -66,7 +66,7 @@ def client_menu(menu):
 
 def main():
     global client_user
-    
+
     successful_login = False
     login_error = ""
 
