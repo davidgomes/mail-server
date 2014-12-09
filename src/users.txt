@@ -1,1 +1,0 @@
-[{"name": "david", "password": "lol", "emails": {"sent": [], "received": []}}, {"name": "nuno", "password": "nabo", "emails": {"sent": [], "received": []}}]

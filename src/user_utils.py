@@ -15,7 +15,7 @@ The user structure is as follows:
 
 import utils
 
-def login(print_error):
+def login_interface(print_error):
     utils.clear_screen()
 
     if print_error:
@@ -26,18 +26,3 @@ def login(print_error):
     password = input("Password: ")
 
     return { "name": name, "password": password }
-
-def add_sent_email(user, email):
-    """
-        Adds a sent email to user `user`
-    """
-
-    user.emails.sent.append(email)
-
-
-def add_received_email(user, email):
-    """
-        Adds a received email to user `user`
-    """
-
-    user.emails.received.append(email)

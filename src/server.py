@@ -2,33 +2,102 @@ import os
 import sys
 import socket
 import json
-from ast import literal_eval
+import threading
 import socketserver
+import utils
 
-HOST = ''                 # Symbolic name meaning all available interfaces
-PORT = 50003              # Arbitrary non-privileged port
+from ast import literal_eval
 
-users = []
+HOST = ''
+PORT = 50003
 
-def server_find_user(client_user):
-    """
-    Given a dictionary with fields ["user"] and ["password"], try to "log in"
-    and find the full user in `users`.
-    """
+class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
+    def handle(self):
+        data = self.request.recv(1024)
+        cur_thread = threading.current_thread()
 
-    found_anything = False
+        data = data.decode()
+        split_data = data.split()
+        command_name = split_data[0]
+        information = " ".join(split_data[1:])
 
-    for user in users:
-        if user["name"] == client_user["name"]:
-            found_anything = True
+        if command_name == "GET":
+            response = self.server.get(information)
+        elif command_name == "SEND":
+            response = self.server.send(information)
+        elif command_name == "DELETE":
+            pass
 
-            if user["password"] == client_user["password"]:
-                return user
-            else:
-                raise Exception("Wrong password.")
+        self.request.sendall(response.encode())
 
-    if not found_anything:
-        raise Exception("User not found.")
+class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    users = []
+
+    def find_user(self, client_user):
+        found_anything = False
+
+        for user in self.users:
+            if user["name"] == client_user["name"]:
+                found_anything = True
+
+                if user["password"] == client_user["password"]:
+                    return user
+                else:
+                    raise Exception("Wrong password.")
+
+        if not found_anything:
+            raise Exception("User not found.")
+
+    def send(self, info):
+        print("Got a SEND request.")
+
+        info = literal_eval(info)
+
+        try:
+            full_user = self.find_user(info)
+        except Exception as error:
+            return "ERROR {0}".format(error)
+
+        # Add the email to each receiver's inbox
+        for receiver in info["email"]["receivers"]:
+            for user in self.users:
+                if receiver == user["name"]:
+                    print("Adding received email to " + user["name"])
+                    user["emails"]["received"].append(info["email"])
+
+                if full_user["name"] == user["name"]:
+                    user["emails"]["sent"].append(info["email"])
+
+        print(self.users)
+        return ""
+
+    def get(self, info):
+        print("Got a GET request.")
+        print(info)
+
+        client_user = literal_eval(info)
+
+        try:
+            full_user = self.find_user(client_user)
+            return str(full_user)
+        except Exception as error:
+            return "ERROR {0}".format(error)
+
+    def __init__(self, server_address, handler_class):
+        user_file = open("users.json", "r")
+        self.users = json.loads(user_file.read())
+        user_file.close()
+
+        self.allow_reuse_address = True
+
+        socketserver.TCPServer.__init__(self, server_address, handler_class)
+
+    def shutdown(self):
+        user_file = open("users.txt", "w")
+        user_file.write(json.dumps(users))
+        user_file.close()
+
+        super().shutdown()
 
 def server_get(info, conn):
     # 'data' is a dictionary in a string, containing ["user"] and ["password"]
@@ -61,7 +130,7 @@ def server_send(info, conn):
     except Exception as error:
         conn.sendall("ERROR {0}".format(error).encode())
         return
-    
+
     # Add the email to each receiver's inbox
     for receiver in info["email"]["receivers"]:
         for user in users:
@@ -73,61 +142,15 @@ def server_send(info, conn):
     full_user["emails"]["sent"].append(info["email"])
 
     print(users)
-        
-def server_process(data, conn):
-    data = data.decode()
-    split_data = data.split()
-    command_name = split_data[0]
-    information = " ".join(split_data[1:])
-
-    if command_name == "GET":
-        server_get(information, conn)
-    elif command_name == "SEND":
-        server_send(information, conn)
-    elif command_name == "DELETE":
-        pass
 
 def main():
-    user_file = open("users.txt", "r")
-    user_list = json.loads(user_file.read())
-    user_file.close()
-    
-    for user in user_list:
-        users.append(user)
+    utils.clear_screen()
 
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    s.bind((HOST, PORT))
-    s.listen(1)
-
-    any_connection = False
-
-    while True:
-        try:
-            conn, addr = s.accept()
-            data = conn.recv(1024)
-
-            # keep looking
-            if not data: continue
-
-            any_connection = True
-
-            pid = os.fork()
-
-            if pid == 0:
-                server_process(data, conn)
-                conn.close()
-                sys.exit(0)
-        except KeyboardInterrupt:
-            break
-
-    if any_connection:
-        conn.close()
-
-    # TODO Re-write users
-    user_file = open("users.txt", "w")
-    user_file.write(json.dumps(users))
-    user_file.close()
+    server = ThreadedTCPServer((HOST, PORT), ThreadedTCPRequestHandler)
+    server_thread = threading.Thread(target=server.serve_forever)
+    server_thread.daemon = True
+    server_thread.start()
+    server_thread.join()
 
 if __name__ == "__main__":
     main()
