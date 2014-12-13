@@ -12,17 +12,20 @@ class Client():
     user = dict()
 
     def send_server(self, what):
-        print("what: %s" % what)
         self.s.sendall(what.encode())
+
+    def get_from_server(self):
+        return self.s.recv(1024).decode()
 
     def send_mail(self):
         client_user = self.user
         client_user["email"] = email_utils.email_send_interface()
         self.send_server("SEND {0}".format(str(client_user)))
-        time.sleep(5)
-        self.user = literal_eval(self.s.recv(1024).decode())
+        self.user = literal_eval(self.get_from_server())
 
     def read_received_mail(self):
+        self.send_server("GET {0}".format(str(self.user)))
+        self.user = literal_eval(self.get_from_server())
         email_utils.list_wait(self.user["emails"]["received"])
 
     def read_sent_mail(self):

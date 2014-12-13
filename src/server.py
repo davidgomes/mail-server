@@ -11,11 +11,7 @@ PORT = 50003
 class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
     def handle(self):
         while True:
-            try:
-                data = self.request.recv(1024)
-            except KeyboardInterrupt:
-                print("hi")
-
+            data = self.request.recv(1024)
             cur_thread = threading.current_thread()
 
             data = data.decode()
@@ -33,13 +29,11 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
             elif command_name == "DELETE":
                 pass
 
-            print("Sending back:")
-            print(response)
             self.request.sendall(response.encode())
 
 class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     daemon_threads = True
-    
+
     users = []
 
     def find_user(self, client_user):
@@ -58,8 +52,6 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
             raise Exception("User not found.")
 
     def send(self, info):
-        print("Got a SEND request.")
-
         info = literal_eval(info)
 
         try:
@@ -77,8 +69,6 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
                 if full_user["name"] == user["name"]:
                     user["emails"]["sent"].append(info["email"])
 
-        print("catarina")
-        print(self.users)
         return str(full_user)
 
     def get(self, info):
