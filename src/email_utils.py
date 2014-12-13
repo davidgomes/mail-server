@@ -34,7 +34,7 @@ def list_wait(email_list):
 
     email_index = int(input("Which email would you like to read? "))
 
-    display_email_wait(email_list[email_index - 1])
+    return display_email_wait(email_list[email_index - 1])
 
 def display_email_wait(which_email):
     """
@@ -50,4 +50,4 @@ def display_email_wait(which_email):
 
     # let's delete the email
     if action == "D":
-        del which_email
+        return which_email

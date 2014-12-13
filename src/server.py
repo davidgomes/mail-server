@@ -27,7 +27,7 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
             elif command_name == "SEND":
                 response = self.server.send(information)
             elif command_name == "DELETE":
-                pass
+                response = self.server.delete_email(information)
 
             self.request.sendall(response.encode())
 
@@ -51,6 +51,24 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
         if not found_anything:
             raise Exception("User not found.")
 
+    def delete_email(self, info):
+        split_info = " ".join(info.split()[:-1]).split("} {")
+        info_user = literal_eval(split_info[0] + "}")
+        info_email = literal_eval("{" + split_info[1])
+        received_or_sent = info.split()[-1].strip()
+
+        try:
+            full_user = self.find_user(info_user)
+        except Exception as error:
+            return "ERROR {0}".format(error)
+
+        try:
+            full_user["emails"][received_or_sent].remove(info_email)
+        except ValueError:
+            return "ERROR Email not found."
+
+        return str(full_user)
+        
     def send(self, info):
         info = literal_eval(info)
 
@@ -72,9 +90,6 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
         return str(full_user)
 
     def get(self, info):
-        print("Got a GET request.")
-        print(info)
-
         client_user = literal_eval(info)
 
         try:

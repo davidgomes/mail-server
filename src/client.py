@@ -17,19 +17,35 @@ class Client():
     def get_from_server(self):
         return self.s.recv(1024).decode()
 
+    def update_user(self):
+        self.send_server("GET {0}".format(str(self.user)))
+        self.user = literal_eval(self.get_from_server())
+
     def send_mail(self):
         client_user = self.user
         client_user["email"] = email_utils.email_send_interface()
+
         self.send_server("SEND {0}".format(str(client_user)))
         self.user = literal_eval(self.get_from_server())
 
     def read_received_mail(self):
-        self.send_server("GET {0}".format(str(self.user)))
-        self.user = literal_eval(self.get_from_server())
-        email_utils.list_wait(self.user["emails"]["received"])
+        self.update_user()
+
+        list_wait_output = email_utils.list_wait(self.user["emails"]["received"])
+
+        # user wants to delete a file
+        if list_wait_output:
+            self.send_server("DELETE {0} {1} {2}".format(self.user, list_wait_output, "received"))
+            self.user = literal_eval(self.get_from_server())
 
     def read_sent_mail(self):
-        email_utils.list_wait(self.user["emails"]["sent"])
+        self.update_user()
+
+        list_wait_output = email_utils.list_wait(self.user["emails"]["sent"])
+
+        if list_wait_output:
+            self.send_server("DELETE {0} {1} {2}".format(self.user, list_wait_output, "sent"))
+            self.user = literal_eval(self.get_from_server())
 
     def exit(self):
         sys.exit(0)
