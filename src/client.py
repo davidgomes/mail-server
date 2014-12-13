@@ -2,100 +2,89 @@ import socket
 import utils
 import user_utils
 import email_utils
+import time
+import sys
 from ast import literal_eval
 
-HOST = 'localhost'
-PORT = 50003
+class Client():
+    HOST = 'localhost'
+    PORT = 50003
+    user = dict()
 
-client_user = dict()
+    def send_server(self, what):
+        print("what: %s" % what)
+        self.s.sendall(what.encode())
 
-def send_server(what):
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect((HOST, PORT))
-    s.sendall(what.encode())
-    return s
+    def send_mail(self):
+        client_user = self.user
+        client_user["email"] = email_utils.email_send_interface()
+        self.send_server("SEND {0}".format(str(client_user)))
+        time.sleep(5)
+        self.user = literal_eval(self.s.recv(1024).decode())
 
-def client_refresh():
-    global client_user
+    def read_received_mail(self):
+        email_utils.list_wait(self.user["emails"]["received"])
 
-    s = send_server("GET {0}".format(client_user))
-    server_response = s.recv(1024).decode()
-    client_user = literal_eval(server_response)
-    s.close()
+    def read_sent_mail(self):
+        email_utils.list_wait(self.user["emails"]["sent"])
 
-    return True
+    def exit(self):
+        sys.exit(0)
 
-def client_send_mail():
-    client_user["email"] = email_utils.email_send_interface()
-    s = send_server("SEND {0}".format(str(client_user)))
-    server_response = s.recv(1024).decode()
-    s.close()
+    def menu(self, menu):
+        utils.clear_screen()
 
-    return True
+        for i in range(len(menu)):
+            menu_option = menu[i]
+            print("{0}: {1}".format(i + 1, menu_option[0]))
 
-def client_read_received_mail():
-    email_utils.list_wait(client_user["emails"]["received"])
+    def menu_wait(self):
+        menu = [ ["Send Email", self.send_mail],
+                 ["Read Inbox", self.read_received_mail],
+                 ["Read Sent Mail", self.read_sent_mail],
+                 ["Exit", self.exit] ]
 
-    return True
+        self.menu(menu)
+        menu_option = int(input("Choose: ")) - 1 # options start in 1
+        return menu[menu_option][-1]()
 
-def client_read_sent_mail():
-    email_utils.list_wait(client_user["emails"]["sent"])
+    def login(self):
+        successful_login = False
+        login_error = ""
 
-    return True
+        while not successful_login:
+            user_dict = user_utils.login_interface(login_error)
+            client_user_str = str(user_dict)
 
-def client_exit():
-    return False
+            # Send our login attempt
+            self.send_server("GET {0}".format(client_user_str))
 
-def client_menu_wait():
-    menu = [ ["Refresh", client_refresh],
-             ["Send Email", client_send_mail],
-             ["Read Inbox", client_read_received_mail],
-             ["Read Sent Mail", client_read_sent_mail],
-             ["Exit", client_exit] ]
+            # Receive the full user
+            server_response = self.s.recv(1024).decode()
 
-    client_menu(menu)
-    menu_option = int(input("Escolhe: ")) - 1 # options start in 1
-    return menu[menu_option][-1]()
+            print("response: " + server_response)
 
-def client_menu(menu):
-    utils.clear_screen()
+            if server_response.startswith("ERROR"):
+                login_error = " ".join(server_response.split()[1:])
+                self.load_socket()
+            else:
+                successful_login = True
+                self.user = literal_eval(server_response)
 
-    for i in range(len(menu)):
-        menu_option = menu[i]
-        print("{0}: {1}".format(i + 1, menu_option[0]))
+        while True:
+            self.menu_wait()
+
+    def load_socket(self):
+        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.s.connect((self.HOST, self.PORT))
+
+    def __init__(self):
+        self.load_socket()
 
 def main():
-    global client_user
-
-    successful_login = False
-    login_error = ""
-
-    while not successful_login:
-        user_dict = user_utils.login_interface(login_error)
-        client_user_str = str(user_dict)
-
-        # Send our login attempt
-        s = send_server("GET {0}".format(client_user_str))
-
-        # Receive the full user
-        server_response = s.recv(1024).decode()
-        s.close()
-
-        print("response: " + server_response)
-
-        if server_response.startswith("ERROR"):
-            login_error = " ".join(server_response.split()[1:])
-        else:
-            successful_login = True
-            client_user = literal_eval(server_response)
-
-    # Call menu with to the full user we get back from the server
-    while True:
-        if not client_menu_wait():
-            break
-
-    # client_exit leads you where
-    s.close()
+    client = Client()
+    client.login()
 
 if __name__ == "__main__":
     main()

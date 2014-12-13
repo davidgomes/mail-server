@@ -1,6 +1,3 @@
-import os
-import sys
-import socket
 import json
 import threading
 import socketserver
@@ -13,24 +10,36 @@ PORT = 50003
 
 class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
     def handle(self):
-        data = self.request.recv(1024)
-        cur_thread = threading.current_thread()
+        while True:
+            try:
+                data = self.request.recv(1024)
+            except KeyboardInterrupt:
+                print("hi")
 
-        data = data.decode()
-        split_data = data.split()
-        command_name = split_data[0]
-        information = " ".join(split_data[1:])
+            cur_thread = threading.current_thread()
 
-        if command_name == "GET":
-            response = self.server.get(information)
-        elif command_name == "SEND":
-            response = self.server.send(information)
-        elif command_name == "DELETE":
-            pass
+            data = data.decode()
+            if not data: continue
 
-        self.request.sendall(response.encode())
+            print("data: %s" % data)
+            split_data = data.split()
+            command_name = split_data[0]
+            information = " ".join(split_data[1:])
+
+            if command_name == "GET":
+                response = self.server.get(information)
+            elif command_name == "SEND":
+                response = self.server.send(information)
+            elif command_name == "DELETE":
+                pass
+
+            print("Sending back:")
+            print(response)
+            self.request.sendall(response.encode())
 
 class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    daemon_threads = True
+    
     users = []
 
     def find_user(self, client_user):
@@ -68,8 +77,9 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
                 if full_user["name"] == user["name"]:
                     user["emails"]["sent"].append(info["email"])
 
+        print("catarina")
         print(self.users)
-        return ""
+        return str(full_user)
 
     def get(self, info):
         print("Got a GET request.")
@@ -89,59 +99,14 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
         user_file.close()
 
         self.allow_reuse_address = True
-
         socketserver.TCPServer.__init__(self, server_address, handler_class)
 
     def shutdown(self):
-        user_file = open("users.txt", "w")
+        user_file = open("users.json", "w")
         user_file.write(json.dumps(users))
         user_file.close()
 
         super().shutdown()
-
-def server_get(info, conn):
-    # 'data' is a dictionary in a string, containing ["user"] and ["password"]
-    # parse it into client_user
-
-    print("Got a GET request.")
-    print(users)
-
-    client_user = literal_eval(info)
-
-    try:
-        full_user = server_find_user(client_user)
-        conn.sendall(str(full_user).encode())
-    except Exception as error:
-        conn.sendall("ERROR {0}".format(error).encode())
-
-def server_send(info, conn):
-    """
-    Find the full user in `users`, from ["user"] and ["password"].
-
-    Then proceed to sending the email in ["email"].
-    """
-
-    print("Got a SEND request.")
-
-    info = literal_eval(info)
-
-    try:
-        full_user = server_find_user(info)
-    except Exception as error:
-        conn.sendall("ERROR {0}".format(error).encode())
-        return
-
-    # Add the email to each receiver's inbox
-    for receiver in info["email"]["receivers"]:
-        for user in users:
-            if receiver == user["name"]:
-                print("Adding received email to " + user["name"])
-                user["emails"]["received"].append(info["email"])
-
-    # Add the email to the sender's send box
-    full_user["emails"]["sent"].append(info["email"])
-
-    print(users)
 
 def main():
     utils.clear_screen()
