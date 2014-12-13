@@ -68,7 +68,7 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
             return "ERROR Email not found."
 
         return str(full_user)
-        
+
     def send(self, info):
         info = literal_eval(info)
 
