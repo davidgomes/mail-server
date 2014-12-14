@@ -1,9 +1,8 @@
 import sys
-import socket
 import json
 import threading
 import socketserver
-import utils
+# import utils
 import signal
 
 from ast import literal_eval
@@ -79,28 +78,7 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
                 if sender_user["name"] == user["name"]:
                     sender_user["emails"]["sent"].append(email)
 
-        if not any_receiver_found:
-            backup_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            backup_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            backup_socket.connect(('', self.backup_server_port))
-
-            login_user = { "name": sender_user["name"],
-                           "password": sender_user["password"] }
-
-            backup_socket.sendall("GET {0}".format(login_user).encode())
-            response = backup_socket.recv(2048).decode()
-
-            if response.startswith("ERROR"):
-                print("\nERROR {0}".format(" ".join(response.split()[1:])))
-            else:
-                backup_user = literal_eval(response)
-                command = "SEND {0}".format(email)
-                backup_socket.sendall(command.encode())
-                backup_any_receiver_found = backup_socket.recv(2014).decode()
-
-                return backup_any_receiver_found
-        else:
-            return True
+        return any_receiver_found
 
     def get(self, info):
         client_user = literal_eval(info)
@@ -111,6 +89,15 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
         except Exception as error:
             return "ERROR {0}".format(error)
 
+    def __init__(self, server_address, handler_class):
+        # utils.clear_screen()
+
+        user_file = open("users.json", "r")
+        self.users = json.loads(user_file.read())
+        user_file.close()
+
+        socketserver.TCPServer.__init__(self, server_address, handler_class)
+
     def shutdown(self):
         user_file = open("users.json", "w")
         user_file.write(json.dumps(self.users))
@@ -118,19 +105,8 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
 
         super().shutdown()
 
-    def __init__(self, server_address, handler_class, backup_server_port):
-        user_file = open("users.json", "r")
-        self.users = json.loads(user_file.read())
-        user_file.close()
-
-        self.backup_server_port = backup_server_port
-
-        socketserver.TCPServer.__init__(self, server_address, handler_class)
-
 def main():
-    utils.clear_screen()
-    server = ThreadedTCPServer((HOST, int(sys.argv[1])), ThreadedTCPRequestHandler,
-                               int(sys.argv[2]))
+    server = ThreadedTCPServer((HOST, int(sys.argv[1])), ThreadedTCPRequestHandler)
 
     # server_thread = threading.Thread(target=server.serve_forever)
     # server_thread.daemon = True

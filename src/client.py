@@ -9,24 +9,29 @@ from ast import literal_eval
 class Client():
     HOST = 'localhost'
     PORT = 50003
+    QUERY_SIZE = 2048
     user = dict()
 
     def send_server(self, what):
         self.s.sendall(what.encode())
 
     def get_from_server(self):
-        return self.s.recv(1024).decode()
+        result = self.s.recv(self.QUERY_SIZE).decode()
+        return result
 
     def update_user(self):
         self.send_server("GET {0}".format(str(self.user)))
         self.user = literal_eval(self.get_from_server())
 
     def send_mail(self):
-        client_user = self.user
-        client_user["email"] = email_utils.email_send_interface()
+        email = email_utils.email_send_interface()
 
-        self.send_server("SEND {0}".format(str(client_user)))
-        self.user = literal_eval(self.get_from_server())
+        self.send_server("SEND {0}".format(str(email)))
+        response = literal_eval(self.get_from_server())
+
+        if not response:
+            print("The user you tried to email doesn't exist in either of the servers.")
+            sys.exit(0)
 
     def read_received_mail(self):
         self.update_user()
@@ -35,8 +40,7 @@ class Client():
 
         # user wants to delete a file
         if list_wait_output:
-            self.send_server("DELETE {0} {1} {2}".format(self.user, list_wait_output, "received"))
-            self.user = literal_eval(self.get_from_server())
+            self.send_server("DELETE {0} {1}".format(list_wait_output, "received"))
 
     def read_sent_mail(self):
         self.update_user()
@@ -44,8 +48,7 @@ class Client():
         list_wait_output = email_utils.list_wait(self.user["emails"]["sent"])
 
         if list_wait_output:
-            self.send_server("DELETE {0} {1} {2}".format(self.user, list_wait_output, "sent"))
-            self.user = literal_eval(self.get_from_server())
+            self.send_server("DELETE {0} {1}".format(list_wait_output, "sent"))
 
     def exit(self):
         sys.exit(0)
@@ -98,11 +101,12 @@ class Client():
         self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.s.connect((self.HOST, self.PORT))
 
-    def __init__(self):
+    def __init__(self, port):
+        self.PORT = port
         self.load_socket()
 
 def main():
-    client = Client()
+    client = Client(int(sys.argv[1]))
     client.login()
 
 if __name__ == "__main__":
