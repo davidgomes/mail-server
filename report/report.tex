@@ -15,7 +15,7 @@
 \addtolength{\oddsidemargin}{-45pt}
 
 \title{Cliente e Servidor de Correio Eletrónico}
-\author{David Gomes, Nuno Gonçalves}
+\author{David Gomes (2013136061), Nuno Gonçalves (2013140672)}
 \date{Dezembro 2014}
 
 \begin{document}
@@ -23,9 +23,87 @@
 
 Neste relatório descrevemos o nosso segundo projeto de Introdução às Redes
 e Comunicações, que envolvia criar um cliente e um servidor de email com
-recurso a \textit{sockets}.
+recurso a \textit{sockets}. Implementamos tanto o cliente como o servidor
+em Python, de forma a simplificar o envio de informação entre cliente e servidor.
 
-Implementamos tanto o cliente como o servidor em Python, de forma a simplificar
-o envio de informação entre cliente e servidor.
+\section{Comunicação Cliente-Servidor}
+Para comunicarmos entre o cliente e o servidor definimos três comandos.
+
+\subsection{GET}
+O comando \texttt{GET} recebe apenas um argumento que é um dicionário da forma:
+
+\vspace{2mm}
+\begin{lstlisting}[language=Python]
+  {
+    'user': String,
+    'password': String
+  }
+\end{lstlisting}
+
+Este comando, se sucedido, vai devolver um dicionário da forma:
+
+\vspace{2mm}
+\begin{lstlisting}[language=Python]
+  {
+    'user': String,
+    'password': String,
+
+    'emails': {
+      'sent': [],
+      'received': []
+    }
+  }
+\end{lstlisting}
+
+Basicamente, o comando \texttt{GET} serve para efetuar o \textit{login} no
+servidor.
+
+\subsection{SEND}
+O comando \texttt{SEND} recebe um argumento que é um dicionário da forma:
+
+\vspace{2mm}
+\begin{lstlisting}[language=Python]
+  {
+    'receivers': [],
+    'subject': String,
+    'content': String
+  }
+\end{lstlisting}
+
+Este comando devolve \textit{True} ou \textit{False} caso o envio da
+mensagem tenha sucedido ou não.
+
+\subsection{DELETE}
+O comando \texttt{DELETE} recebe um argumento que é um dicionário da forma:
+
+\vspace{2mm}
+\begin{lstlisting}[language=Python]
+  {
+    'receivers': [],
+    'subject': String,
+    'content': String
+  }
+\end{lstlisting}
+
+Este comando devolve \textit{True} ou \textit{False} caso a remoção da
+mensagem tenha sucedido ou não.
+
+\subsection{Detalhes}
+Tanto os comandos \texttt{SEND} como o comando \texttt{DELETE} atuam sobre o utilizador
+ligado à \textit{socket} atual.
+
+O nosso programa permite listar e ver qualquer uma das mensagens recebidas ou
+enviadas, assim como apagar qualquer uma destas.
+
+Finalmente, escrevemos num ficheiro de texto em JSON a informação e as mensagens
+de todos os utilizadores, atualizada quando terminamos o processo do servidor.
+
+\section{Comunicação Servidor-Servidor}
+A nossa interpretação na questão do duplo servidor foi criar um \texttt{server2}
+que atua como servidor de \textit{backup} ao servidor principal. Quando um cliente
+se encontra ligado ao servidor principal e tenta enviar uma mensagem a um cliente
+que não se encontra registado neste servidor, o servidor tentará enviar a mensagem
+pelo segundo servidor. No entanto, esta funcionalidade só se verifica caso o cliente
+que envia a mensagem também esteja registado no servidor de \textit{backup}.
 
 \end{document}

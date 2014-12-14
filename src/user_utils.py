@@ -20,8 +20,7 @@ def login_interface(print_error):
 
     if print_error:
         print(print_error)
-    
-    print("Welcome to mail-server, you are welcome to log in.")
+
     name = input("Name: ")
     password = input("Password: ")
 

@@ -79,6 +79,9 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
                 if sender_user["name"] == user["name"]:
                     sender_user["emails"]["sent"].append(email)
 
+        if not self.backup_server_port:
+            return any_receiver_found
+                    
         if not any_receiver_found:
             backup_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             backup_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -92,6 +95,7 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
 
             if response.startswith("ERROR"):
                 print("\nERROR {0}".format(" ".join(response.split()[1:])))
+                return False
             else:
                 backup_user = literal_eval(response)
                 command = "SEND {0}".format(email)
@@ -118,8 +122,8 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
 
         super().shutdown()
 
-    def __init__(self, server_address, handler_class, backup_server_port):
-        user_file = open("users.json", "r")
+    def __init__(self, server_address, handler_class, backup_server_port, file_name):
+        user_file = open(file_name, "r")
         self.users = json.loads(user_file.read())
         user_file.close()
 
@@ -130,7 +134,7 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
 def main():
     utils.clear_screen()
     server = ThreadedTCPServer((HOST, int(sys.argv[1])), ThreadedTCPRequestHandler,
-                               int(sys.argv[2]))
+                               int(sys.argv[2]), sys.argv[3])
 
     # server_thread = threading.Thread(target=server.serve_forever)
     # server_thread.daemon = True
