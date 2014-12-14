@@ -1,1 +1,1 @@
-[{"emails": {"received": [], "sent": []}, "password": "lol", "name": "david"}, {"emails": {"received": [], "sent": []}, "password": "nabo", "name": "nuno"}]
+[{"password": "lol", "name": "david", "emails": {"sent": [{"receivers": ["nuno", "david"], "subject": "lads", "content": "asdsadas"}, {"receivers": ["nuno", "david"], "subject": "lads", "content": "asdsadas"}], "received": [{"receivers": ["nuno", "david"], "subject": "lads", "content": "asdsadas"}]}}, {"password": "nabo", "name": "nuno", "emails": {"sent": [], "received": []}}]

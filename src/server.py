@@ -2,6 +2,7 @@ import json
 import threading
 import socketserver
 import utils
+import signal
 
 from ast import literal_eval
 
@@ -23,17 +24,17 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
             information = " ".join(split_data[1:])
 
             if command_name == "GET":
-                response = self.server.get(information)
+                self.user = self.request.sendall(response.encode())
+                self.request.sendall(response.encode())
             elif command_name == "SEND":
                 response = self.server.send(information)
             elif command_name == "DELETE":
                 response = self.server.delete_email(information)
 
-            self.request.sendall(response.encode())
-
 class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     daemon_threads = True
-
+    allow_reuse_address = True
+        
     users = []
 
     def find_user(self, client_user):
@@ -67,8 +68,6 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
         except ValueError:
             return "ERROR Email not found."
 
-        return str(full_user)
-
     def send(self, info):
         info = literal_eval(info)
 
@@ -87,8 +86,6 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
                 if full_user["name"] == user["name"]:
                     user["emails"]["sent"].append(info["email"])
 
-        return str(full_user)
-
     def get(self, info):
         client_user = literal_eval(info)
 
@@ -103,24 +100,28 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
         self.users = json.loads(user_file.read())
         user_file.close()
 
-        self.allow_reuse_address = True
         socketserver.TCPServer.__init__(self, server_address, handler_class)
-
+        
     def shutdown(self):
         user_file = open("users.json", "w")
-        user_file.write(json.dumps(users))
+        user_file.write(json.dumps(self.users))
         user_file.close()
 
         super().shutdown()
-
+        
 def main():
     utils.clear_screen()
 
     server = ThreadedTCPServer((HOST, PORT), ThreadedTCPRequestHandler)
-    server_thread = threading.Thread(target=server.serve_forever)
-    server_thread.daemon = True
-    server_thread.start()
-    server_thread.join()
+    # server_thread = threading.Thread(target=server.serve_forever)
+    # server_thread.daemon = True
+    # server_thread.start()
+    # server_thread.join()
 
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        server.shutdown()
+    
 if __name__ == "__main__":
     main()
