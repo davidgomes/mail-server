@@ -1,14 +1,4 @@
-Mail Client/Server
+Messaging Client/Server
 ------------------
 
-### How to compile and run
-
-```shell
-mkdir build/
-cd build/
-cmake ..
-make
-./mail-server
-```
-
-Have fun! :D
+A messages server/client written in Python.
